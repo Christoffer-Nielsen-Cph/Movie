@@ -3,6 +3,7 @@ package entities;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.util.List;
+import java.util.Objects;
 
 @Entity
 @NamedQueries({
@@ -13,10 +14,10 @@ import java.util.List;
 
 public class Movie implements Serializable {
 
-    private static final long serialVersionUID = 1L;
+    private static final Long serialVersionUID = 1L;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private int id;
 
     @Column(name = "year")
     private int year;
@@ -24,27 +25,21 @@ public class Movie implements Serializable {
     @Column(name = "title")
     private String title;
 
-   /* @ElementCollection
-    @CollectionTable(name = "actor_list",joinColumns = @JoinColumn(name="id"))
-    @Column(name = "actors")
-    private List<String> actors; */
-
-    private String[] actors;
-
     public Movie() {
     }
 
-    public Movie(int year, String title, List<String> actors) {
+    public Movie(int year, String title) {
         this.year = year;
         this.title = title;
-        this.actors = actors;
     }
 
-    public Long getId() {
+
+
+    public int getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(int id) {
         this.id = id;
     }
 
@@ -64,12 +59,17 @@ public class Movie implements Serializable {
         this.title = title;
     }
 
-    public List<String> getActors() {
-        return actors;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Movie movie = (Movie) o;
+        return id == movie.id && year == movie.year && title.equals(movie.title);
     }
 
-    public void setActors(List<String> actors) {
-        this.actors = actors;
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, year, title);
     }
 
     @Override
@@ -78,7 +78,6 @@ public class Movie implements Serializable {
                 "id=" + id +
                 ", year=" + year +
                 ", title='" + title + '\'' +
-                ", actors=" + actors +
                 '}';
     }
 }

@@ -1,9 +1,6 @@
 package datafacades;
 
-import entities.Child;
 import entities.Movie;
-import entities.Parent;
-import entities.Toy;
 import errorhandling.EntityNotFoundException;
 import utils.EMF_Creator;
 
@@ -47,73 +44,60 @@ public class MovieFacade implements IDataFacade<Movie> {
     @Override
     public Movie create(Movie m){
         EntityManager em = getEntityManager();
+        Movie movie = new Movie(m.getYear(),m.getTitle());
         try {
             em.getTransaction().begin();
-            p.getChildren().forEach(child->{
-                if(child.getId()!=0)
-                    child = em.find(Child.class,child.getId());
-                else {
-                    child.getToys().forEach(toy->{
-                        if(toy.getId()!=0)
-                            toy = em.find(Toy.class, toy.getId());
-                        else {
-                            em.persist(toy);
-                        }
-                    });
-                    em.persist(child);
-                }
-            });
-            em.persist(p);
+            em.persist(movie);
             em.getTransaction().commit();
         } finally {
             em.close();
         }
-        return p;
+        return movie;
     }
 
     @Override
-    public Parent getById(int id) throws EntityNotFoundException {
+    public Movie getById(int id) throws EntityNotFoundException {
         EntityManager em = getEntityManager();
-        Parent p = em.find(Parent.class, id);
-        if (p == null)
-            throw new EntityNotFoundException("The Parent entity with ID: "+id+" Was not found");
-        return p;
+        Movie m = em.find(Movie.class, id);
+        if (m == null)
+            throw new EntityNotFoundException("The Movie entity with ID: "+id+" Was not found");
+        return m;
     }
 
     @Override
-    public List<Parent> getAll(){
+    public List<Movie> getAll(){
         EntityManager em = getEntityManager();
-        TypedQuery<Parent> query = em.createQuery("SELECT p FROM Parent p", Parent.class);
-        List<Parent> parents = query.getResultList();
-        return parents;
+        TypedQuery<Movie> query = em.createQuery("SELECT m FROM Movie m", Movie.class);
+        List<Movie> movies = query.getResultList();
+        return movies;
     }
 
     @Override
     public Movie update(Movie movie) throws EntityNotFoundException {
-        if (parent.getId() == 0)
-            throw new IllegalArgumentException("No Parent can be updated when id is missing");
+        if (movie.getId() == 0)
+            throw new IllegalArgumentException("No Movie can be updated when id is missing");
         EntityManager em = getEntityManager();
         em.getTransaction().begin();
-        Parent p = em.merge(parent);
+        Movie m = em.merge(movie);
         em.getTransaction().commit();
-        return p;
+        return m;
     }
 
     @Override
-    public Parent delete(int id) throws EntityNotFoundException{
+    public Movie delete(int id) throws EntityNotFoundException{
         EntityManager em = getEntityManager();
-        Parent p = em.find(Parent.class, id);
-        if (p == null)
-            throw new EntityNotFoundException("Could not remove Parent with id: "+id);
+        Movie m = em.find(Movie.class, id);
+        if (m == null)
+            throw new EntityNotFoundException("Could not remove Movie with id: "+id);
         em.getTransaction().begin();
-        em.remove(p);
+        em.remove(m);
         em.getTransaction().commit();
-        return p;
+        return m;
     }
 
     public static void main(String[] args) {
         emf = EMF_Creator.createEntityManagerFactory();
-        IDataFacade fe = getParentFacade(emf);
+        IDataFacade fe = getMovieFacade(emf);
         fe.getAll().forEach(dto->System.out.println(dto));
     }
 }

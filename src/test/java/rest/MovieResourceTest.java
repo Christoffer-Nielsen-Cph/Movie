@@ -2,59 +2,41 @@ package rest;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import datafacades.ParentFacade;
-import dtos.ChildDTO;
-import dtos.ParentDTO;
-import entities.Child;
-import entities.Parent;
-import entities.Toy;
+import dtos.MovieDTO;
+import entities.Movie;
+import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import io.restassured.parsing.Parser;
 import io.restassured.path.json.JsonPath;
 import io.restassured.response.Response;
 import io.restassured.response.ResponseBody;
-import io.restassured.response.ResponseOptions;
-import io.restassured.response.ValidatableResponse;
+import org.glassfish.grizzly.http.server.HttpServer;
+import org.glassfish.grizzly.http.util.HttpStatus;
 import org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.junit.jupiter.api.*;
 import utils.EMF_Creator;
 
-import javax.persistence.EntityManagerFactory;
-import javax.ws.rs.core.UriBuilder;
-import java.net.URI;
-import entities.*;
-import utils.EMF_Creator;
-import io.restassured.RestAssured;
-import static io.restassured.RestAssured.given;
-import io.restassured.parsing.Parser;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.ws.rs.core.UriBuilder;
-import org.glassfish.grizzly.http.server.HttpServer;
-import org.glassfish.grizzly.http.util.HttpStatus;
-import org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory;
-import org.glassfish.jersey.server.ResourceConfig;
+import java.net.URI;
+import java.util.Arrays;
+import java.util.List;
 
+import static io.restassured.RestAssured.given;
 import static junit.framework.Assert.assertEquals;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
-import org.junit.jupiter.api.BeforeAll;
-
 //Uncomment the line below, to temporarily disable this test
-//@Disabled
-public class ParentResourceTest {
+
+public class MovieResourceTest {
 
     private static final int SERVER_PORT = 7777;
     private static final String SERVER_URL = "http://localhost/api";
-    private static Parent p1, p2;
-    private static Child c1, c2;
-    private static Toy t1, t2;
+    private static Movie m1, m2;
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     static final URI BASE_URI = UriBuilder.fromUri(SERVER_URL).port(SERVER_PORT).build();
@@ -93,29 +75,14 @@ public class ParentResourceTest {
     @BeforeEach
     public void setUp() {
         EntityManager em = emf.createEntityManager();
-        p1 = new Parent("Henrik",76);
-        p2 = new Parent("Betty",76);
-        c1 = new Child("Joseph",45);
-        c2 = new Child("Alberta",43);
-        t1 = new Toy("Pulling rope",3);
-        t2 = new Toy("Skateboard", 6);
-
-        p1.addChild(c1);
-        p1.addChild(c2);
-        c1.addToy(t1);
-        c2.addToy(t2);
+        m1 = new Movie(2019, "GTA the movie");
+        m2 = new Movie(2020, "Titanic");
 
         try {
             em.getTransaction().begin();
-            em.createNamedQuery("Toy.deleteAllRows").executeUpdate();
-            em.createNamedQuery("Child.deleteAllRows").executeUpdate();
-            em.createNamedQuery("Parent.deleteAllRows").executeUpdate();
-            em.persist(t1);
-            em.persist(t2);
-            em.persist(c1);
-            em.persist(c2);
-            em.persist(p1);
-            em.persist(p2);
+            em.createNamedQuery("Movie.deleteAllRows").executeUpdate();
+            em.persist(m1);
+            em.persist(m2);
 
             em.getTransaction().commit();
         } finally {
@@ -126,14 +93,14 @@ public class ParentResourceTest {
     @Test
     public void testServerIsUp() {
         System.out.println("Testing is server UP");
-        given().when().get("/parent").then().statusCode(200);
+        given().when().get("/movie").then().statusCode(200);
     }
 
     @Test
     public void testLogRequest() {
         System.out.println("Testing logging request details");
         given().log().all()
-                .when().get("/parent")
+                .when().get("/movie")
                 .then().statusCode(200);
     }
 
@@ -141,7 +108,7 @@ public class ParentResourceTest {
     public void testLogResponse() {
         System.out.println("Testing logging response details");
         given()
-                .when().get("/parent")
+                .when().get("/movie")
                 .then().log().body().statusCode(200);
     }
 
@@ -149,14 +116,13 @@ public class ParentResourceTest {
     public void testGetById()  {
         given()
                 .contentType(ContentType.JSON)
-//                .pathParam("id", p1.getId()).when()
-                .get("/parent/{id}",p1.getId())
+                .get("/movie/{id}",m1.getId())
                 .then()
                 .assertThat()
                 .statusCode(HttpStatus.OK_200.getStatusCode())
-                .body("id", equalTo(p1.getId()))
-                .body("name", equalTo(p1.getName()))
-                .body("children", hasItems(hasEntry("name","Joseph"),hasEntry("name","Alberta")));
+                .body("id", equalTo(m1.getId()))
+                .body("year", equalTo(m1.getYear()))
+                .body("title",equalTo(m1.getTitle()));
     }
 
     @Test
@@ -164,104 +130,103 @@ public class ParentResourceTest {
         given()
                 .contentType(ContentType.JSON)
 //                .pathParam("id", p1.getId()).when()
-                .get("/parent/{id}",999999999)
+                .get("/movie/{id}",999999999)
                 .then()
                 .assertThat()
                 .statusCode(HttpStatus.NOT_FOUND_404.getStatusCode())
                 .body("code", equalTo(404))
-                .body("message", equalTo("The Parent entity with ID: 999999999 Was not found"));
+                .body("message", equalTo("The Movie entity with ID: 999999999 Was not found"));
     }
 
     @Test
     public void testPrintResponse(){
-        Response response = given().when().get("/parent/"+p1.getId());
+        Response response = given().when().get("/movie/"+m1.getId());
         ResponseBody body = response.getBody();
         System.out.println(body.prettyPrint());
 
         response
                 .then()
                 .assertThat()
-                .body("name",equalTo("Henrik"));
+                .body("year",equalTo(2019));
     }
 
     @Test 
     public void exampleJsonPathTest() {
-        Response res = given().get("/parent/"+p1.getId());
+        Response res = given().get("/movie/"+m1.getId());
         assertEquals(200, res.getStatusCode());
         String json = res.asString();
         JsonPath jsonPath = new JsonPath(json);
-        assertEquals("Henrik", jsonPath.get("name"));
+        assertEquals("GTA the movie", jsonPath.get("title"));
     }
 
     @Test
-    public void getAllParents() throws Exception {
-        List<ParentDTO> parentDTOs;
+    public void getAllMovies() throws Exception {
+        List<MovieDTO> movieDTOs;
 
-        parentDTOs = given()
+        movieDTOs = given()
                 .contentType("application/json")
                 .when()
-                .get("/parent")
+                .get("/movie")
                 .then()
-                .extract().body().jsonPath().getList("", ParentDTO.class);
+                .extract().body().jsonPath().getList("", MovieDTO.class);
 
-        ParentDTO p1DTO = new ParentDTO(p1);
-        ParentDTO p2DTO = new ParentDTO(p2);
-        assertThat(parentDTOs, containsInAnyOrder(p1DTO, p2DTO));
+        MovieDTO m1DTO = new MovieDTO(m1);
+        MovieDTO m2DTO = new MovieDTO(m2);
+        assertThat(movieDTOs, containsInAnyOrder(m1DTO, m2DTO));
 
     }
 
 
     @Test
     public void postTest() {
-        Parent p = new Parent("Helge",45);
-        p.addChild(new Child("Josephine",3));
-        ParentDTO pdto = new ParentDTO(p);
-        String requestBody = GSON.toJson(pdto);
+        Movie m = new Movie(2004,"Harry Potter");
+
+        MovieDTO mdto = new MovieDTO(m);
+        String requestBody = GSON.toJson(mdto);
 
         given()
                 .header("Content-type", ContentType.JSON)
                 .and()
                 .body(requestBody)
                 .when()
-                .post("/parent")
+                .post("/movie")
                 .then()
                 .assertThat()
                 .statusCode(200)
                 .body("id", notNullValue())
-                .body("name", equalTo("Helge"))
-                .body("children", hasItems(hasEntry("name","Josephine")));
+                .body("year", equalTo(2004))
+                .body("title",equalTo("Harry Potter"));
     }
 
     @Test
     public void updateTest() {
-        p2.addChild(c2);
-        p2.setAge(23);
-        ParentDTO pdto = new ParentDTO(p2);
-        String requestBody = GSON.toJson(pdto);
+        m2.setYear(1602);
+        m2.setTitle("Krigen");
+        MovieDTO mdto = new MovieDTO(m2);
+        String requestBody = GSON.toJson(mdto);
 
         given()
                 .header("Content-type", ContentType.JSON)
                 .body(requestBody)
                 .when()
-                .put("/parent/"+p2.getId())
+                .put("/movie/"+m2.getId())
                 .then()
                 .assertThat()
                 .statusCode(200)
-                .body("id", equalTo(p2.getId()))
-                .body("name", equalTo("Betty"))
-                .body("age", equalTo(23))
-                .body("children", hasItems(hasEntry("name","Alberta")));
+                .body("id", equalTo(m2.getId()))
+                .body("year", equalTo(1602))
+                .body("title", equalTo("Krigen"));
     }
 
     @Test
     public void testDeleteParent() {
         given()
                 .contentType(ContentType.JSON)
-                .pathParam("id", p2.getId())
-                .delete("/parent/{id}")
+                .pathParam("id", m2.getId())
+                .delete("/movie/{id}")
                 .then()
                 .statusCode(200)
-                .body("id",equalTo(p2.getId()));
+                .body("id",equalTo(m2.getId()));
     }
 
     // More test tools from: https://www.baeldung.com/java-junit-hamcrest-guide
@@ -275,32 +240,24 @@ public class ParentResourceTest {
     @Test
     public void testPropAndValue() {
         System.out.println("Check for property and value on an entity instance");
-        Parent person = new Parent("Benjamin", 33);
-        assertThat(person, hasProperty("name", equalTo("Benjamin")));
+        Movie movie = new Movie(2009, "San Andreas");
+        assertThat(movie, hasProperty("title", equalTo("San Andreas")));
     }
     @Test
     public void testCompareObjects() {
         System.out.println("Check if 2 instances has same property values (EG. use compare properties rather than objects");
-        Parent person1 = new Parent("Betty", 45);
-        Parent person2 = new Parent("Betty", 45);
-        assertThat(person1, samePropertyValuesAs(person2));
+        Movie movie1 = new Movie(1999, "My Movie");
+        Movie movie2 = new Movie(1999, "My Movie");
+        assertThat(movie1, samePropertyValuesAs(movie2));
     }
     @Test
     public void testToString(){
         System.out.println("Check if obj.toString() creates the right output");
-        Parent person=new Parent("Billy", 89);
-        String str=person.toString();
-        assertThat(person,hasToString(str));
+        Movie movie = new Movie(2004, "Ost");
+        String str=movie.toString();
+        assertThat(movie,hasToString(str));
     }
 
-    @Test
-    public void testMapContains() {
-        List<Parent> parents = Arrays.asList(
-                new Parent("Henrik",67),
-                new Parent("Henriette",57)
-        );
-        assertThat(parents.toArray(), arrayContainingInAnyOrder(parents.get(0),parents.get(1)));
-    }
     @Test
     public void testNumeric() {
         System.out.println("Test numeric values");
