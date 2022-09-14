@@ -1,26 +1,26 @@
-GET http://localhost:8080/rest_snippets_war_exploded/api/parent/
+GET http://localhost:8080/rest_snippets_war_exploded/api/movie/
 Accept: application/json
 
 ###
-GET http://localhost:8080/rest_snippets_war_exploded/api/parent/2
+GET http://localhost:8080/rest_snippets_war_exploded/api/movie/2
 Accept: application/json
 
 ###
-GET http://localhost:8080/rest_snippets_war_exploded/api/parent/99999999
+GET http://localhost:8080/rest_snippets_war_exploded/api/movie/99999999
 Accept: application/json
 
 ###
-POST http://localhost:8080/rest_snippets_war_exploded/api/parent
+POST http://localhost:8080/rest_snippets_war_exploded/movie/parent
 Content-Type: application/json
 
-{"name": "Christoffer", "age": 22, "children": []}
+{"year": 2001, "title": "Alle for to"}
 
 ###
-PUT http://localhost:8080/rest_snippets_war_exploded/api/parent/2
+PUT http://localhost:8080/rest_snippets_war_exploded/api/movie/2
 Content-Type: application/json
 
-{"name": "Chris", "age": 25, "children": []}
+{"year": 2006, "title": "Den nye film"}
 
 ###
-DELETE http://localhost:8080/rest_snippets_war_exploded/api/parent/2
+DELETE http://localhost:8080/rest_snippets_war_exploded/api/movie/2
 Content-Type: application/json
