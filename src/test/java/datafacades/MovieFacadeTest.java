@@ -83,7 +83,7 @@ class MovieFacadeTest {
 
     @Test
     void update() throws EntityNotFoundException {
-        System.out.println("Testing Update(Parent p)");
+        System.out.println("Testing Update(Movie m)");
         m2.setYear(1965);
         Movie expected = m2;
         Movie actual = facade.update(m2);
